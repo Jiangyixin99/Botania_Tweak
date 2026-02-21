@@ -1,0 +1,45 @@
+modLoader = "javafml"
+loaderVersion = "[40,)"
+issueTrackerURL = "https://github.com/Prunoideae/KubeJS-Botania/issues"
+license = "GPLv3"
+
+[[mods]]
+modId = "kubejs_botania"
+version = "${version}"
+displayName = "KubeJS Botania"
+authors = "Prunoideae"
+description = '''
+KubeJS Botania integration
+'''
+#logoFile = ""
+
+[[dependencies.kubejs_botania]]
+modId = "forge"
+mandatory = true
+versionRange = "[43,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kubejs_botania]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.19.2,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kubejs_botania]]
+modId = "architectury"
+mandatory = true
+versionRange = "[6.3.49,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.kubejs_botania]]
+modId = "botania"
+mandatory = true
+versionRange = "[1.19.2-440,)"
+
+[[dependencies.kubejs_botania]]
+modId = "kubejs"
+mandatory = true
+versionRange = "[1902.6.1-build.277,)"
