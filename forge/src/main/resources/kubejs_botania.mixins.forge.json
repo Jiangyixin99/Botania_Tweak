@@ -1,12 +1,12 @@
 {
     "required": true,
+    "minVersion": "0.8",
+    "package": "com.prunoideae.mixin",
     "compatibilityLevel": "JAVA_17",
-    "package": "com.prunoideae.mixins.forge",
+    "refmap": "kubejs_botania-forge-refmap.json",
     "mixins": [
-
+        "MixinTileTerrestrialAgglomerationPlate"
     ],
-    "injectors": {
-        "defaultRequire": 1
-    },
-    "minVersion": "0.8"
+    "client": [],
+    "server": []
 }
