@@ -18,6 +18,7 @@ public class KubeJSBotaniaForge {
     public KubeJSBotaniaForge() {
         // 注册 Architectury 事件总线
         EventBuses.registerModEventBus(KubeJSBotania.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
+        KubeJSBotania.init();
 
         // 注册配置
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BotaniaConfig.COMMON_SPEC);

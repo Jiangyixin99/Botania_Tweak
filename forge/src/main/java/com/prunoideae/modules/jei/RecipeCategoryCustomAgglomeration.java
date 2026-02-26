@@ -41,7 +41,7 @@ public class RecipeCategoryCustomAgglomeration implements IRecipeCategory<Agglom
     private final IDrawable icon;
 
     public RecipeCategoryCustomAgglomeration(IGuiHelper guiHelper) {
-        this.title = Component.translatable("botania_tweaks.jei.agglomeration.category");
+        this.title = Component.translatable("泰拉凝聚板");
         this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(BotaniaBlocks.terraPlate));
     }

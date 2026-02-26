@@ -35,7 +35,7 @@ public class AgglomerationRecipe {
     final int totalInputs;
 
     public AgglomerationRecipe(ImmutableList<Object> recipeInputs,
-                               ImmutableList<Object> recipeOutputs, // 注意：这里可以是 ItemStack 或 TagKey？但通常输出都是 ItemStack，建议用 ImmutableList<ItemStack>
+                               ImmutableList<ItemStack> recipeOutputs, // 注意：这里可以是 ItemStack 或 TagKey？但通常输出都是 ItemStack，建议用 ImmutableList<ItemStack>
                                int manaCost,
                                BlockState multiblockCenter, BlockState multiblockEdge, BlockState multiblockCorner,
                                @Nullable BlockState multiblockCenterReplace,

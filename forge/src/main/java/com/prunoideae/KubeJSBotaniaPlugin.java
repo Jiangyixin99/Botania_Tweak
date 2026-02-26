@@ -7,13 +7,22 @@ import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.recipe.schema.RegisterRecipeSchemasEvent;
 import dev.latvian.mods.kubejs.registry.RegistryInfo;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
+import net.minecraft.resources.ResourceLocation;
 import vazkii.botania.api.BotaniaRegistries;
 import vazkii.botania.api.brew.Brew;
 import vazkii.botania.api.corporea.CorporeaHelper;
 import vazkii.botania.api.mana.ManaItemHandler;
 
 public class KubeJSBotaniaPlugin extends KubeJSPlugin {
-
+    public KubeJSBotaniaPlugin() {
+        System.out.println("[KubeJSBotaniaPlugin] Constructor called");
+        // 可选：捕获异常并打印堆栈
+        try {
+            // 可能出错的代码（如依赖其他类）
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
     @Override
     public void init() {
         RegistryInfo<Brew> brew = RegistryInfo.of(BotaniaRegistries.BREWS, Brew.class);
@@ -25,7 +34,7 @@ public class KubeJSBotaniaPlugin extends KubeJSPlugin {
     @Override
     public void registerRecipeSchemas(RegisterRecipeSchemasEvent event) {
         event.namespace("botania")
-                .register("terra_plate", TerraPlateSchema.SCHEMA)
+//                .register("terra_plate", TerraPlateSchema.SCHEMA)
                 .register("mana_infusion", ManaInfusionSchema.SCHEMA)
                 .register("pure_daisy", PureDaisySchema.SCHEMA)
                 .register("elven_trade", ElvenTradeSchema.SCHEMA)
@@ -35,7 +44,7 @@ public class KubeJSBotaniaPlugin extends KubeJSPlugin {
                 .register("orechid", OrechidSchema.SCHEMA)
                 .register("orechid_ignem", OrechidSchema.SCHEMA)
                 .register("marimorphosis", OrechidSchema.SCHEMA_BIOME)
-        ;
+                .register("terra_plate", TerraPlateSchema.SCHEMA);
     }
 
 
