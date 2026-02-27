@@ -1,5 +1,6 @@
 package com.prunoideae.recipe;
 
+import com.prunoideae.KubeJSBotania;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +26,7 @@ public class CustomTerrestrialAgglomerationRecipe implements TerrestrialAgglomer
         this.delegate = delegate;
         this.id = id;
     }
+
     public AgglomerationRecipe getDelegate() {
         return delegate;
     }
@@ -87,7 +89,7 @@ public class CustomTerrestrialAgglomerationRecipe implements TerrestrialAgglomer
 
     @Override
     public @NotNull RecipeType<?> getType() {
-        return BotaniaRecipeTypes.TERRA_PLATE_TYPE;
+        return KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE;
     }
 
     @Override

@@ -28,7 +28,7 @@ public class MixinTerrestrialAgglomerationPlateBlock {
         if (stack.isEmpty()) return;
 
         // 直接调用该静态方法进行判断
-        if (!AgglomerationRecipes.containsItem(stack)) return;
+        if (!AgglomerationRecipes.containsItem(world, stack)) return;
 
         // 执行放置逻辑（仅服务端执行实际修改，客户端返回成功即可）
         if (!world.isClientSide) {

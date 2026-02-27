@@ -1,14 +1,14 @@
 {
-    "required": true,
-    "minVersion": "0.8",
-    "package": "com.prunoideae.mixin",
-    "compatibilityLevel": "JAVA_17",
-    "refmap": "kubejs_botania-forge-refmap.json",
-    "mixins": [
-        "MixinTileTerrestrialAgglomerationPlate",
-        "MixinTerrestrialAgglomerationPlateBlock"
-
-    ],
-    "client": [],
-    "server": []
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.prunoideae.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "kubejs_botania-forge-refmap.json",
+  "mixins": [
+    "MixinCraftyCrateWandHud",
+    "MixinTerrestrialAgglomerationPlateBlock",
+    "MixinTileTerrestrialAgglomerationPlate"
+  ],
+  "client": [],
+  "server": []
 }

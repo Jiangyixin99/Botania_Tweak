@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.registries.ForgeRegistries;
+import vazkii.botania.client.gui.HUDHandler;
 import vazkii.botania.common.block.BotaniaBlocks;
 
 import java.util.ArrayList;
@@ -186,54 +187,39 @@ public class RecipeCategoryCustomAgglomeration implements IRecipeCategory<Agglom
     @Override
     public void draw(AgglomerationRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
         int manaCost = recipe.manaCost;
+        int manaBarWidth = 103;          // 魔力条宽度（Botania 原版）
+        int manaBarHeight = 10;          // 魔力条高度
+        int manaBarX = (WIDTH - manaBarWidth) / 2;   // 水平居中
+        int manaBarY = HEIGHT - 30;       // 魔力条 Y 坐标（底部留空）
 
-        // 魔力条参数
-        int barX = 20;
-        int barY = HEIGHT - 30;
-        int barWidth = 160;
-        int barHeight = 10;
+        // 绘制魔力条（自动处理零头进度）
+        HUDHandler.renderManaBar(guiGraphics, manaBarX, manaBarY, 0x4444FF, 1.0F, manaCost, 1_000_000);
 
-        // 以 1,000,000 为满条基准
-        float ratio = Math.min(1.0f, (float) manaCost / 1_000_000f);
-
-        // 绘制背景条
-        guiGraphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
-        // 绘制前景条
-        int fillWidth = (int) (barWidth * ratio);
-        if (fillWidth > 0) {
-            guiGraphics.fill(barX, barY, barX + fillWidth, barY + barHeight, 0xFF4444FF);
-        }
-
-        // 魔力池数量指示
+        // 计算需要的整池数
         int poolsNeeded = (int) Math.ceil((double) manaCost / 1_000_000.0);
         if (poolsNeeded > 1) {
             String poolText = "x" + poolsNeeded;
-            guiGraphics.drawString(Minecraft.getInstance().font, poolText, barX + barWidth + 5, barY, 0xAAAAAA, false);
+            int fontHeight = Minecraft.getInstance().font.lineHeight;
+            // 计算倍数文字的 Y 坐标：使其与魔力条垂直居中
+            int textY = manaBarY + (manaBarHeight - fontHeight) / 2;
+            // 倍数文字显示在魔力条右侧，间距 5 像素
+            guiGraphics.drawString(Minecraft.getInstance().font, poolText,
+                    manaBarX + manaBarWidth + 5, textY, 0xAAAAAA, false);
         }
 
-        // 魔力数字（显示在魔力条上方）
-        String manaText;
-        if (manaCost >= 1_000_000) {
-            manaText = String.format("%.1fM", manaCost / 1_000_000.0);
-        } else if (manaCost >= 10_000) {
-            manaText = String.format("%.1fK", manaCost / 1000.0);
-        } else {
-            manaText = String.valueOf(manaCost);
-        }
-        guiGraphics.drawString(Minecraft.getInstance().font, manaText, barX, barY - 10, 0xFFFFFF, false);
-
-        // ========== 绘制输入与输出之间的向下箭头 ==========
-        int arrowDownX = (WIDTH - 16) / 2;       // 水平居中
-        int arrowDownY = 10 + ITEM_SIZE + 2;     // 输入物品下方
+        // ========== 其他绘制（箭头）保持不变 ==========
+        // 向下箭头
+        int arrowDownX = (WIDTH - 16) / 2;
+        int arrowDownY = 10 + ITEM_SIZE + 2;
         guiGraphics.drawString(Minecraft.getInstance().font, "↓", arrowDownX + 4, arrowDownY + 4, 0xFFFFFF, false);
 
-        // ========== 绘制两个结构之间的向右箭头（如果存在替换） ==========
+        // 向右箭头（如果有替换结构）
         boolean hasReplacement = recipe.multiblockCenterReplace != null ||
                 recipe.multiblockEdgeReplace != null ||
                 recipe.multiblockCornerReplace != null;
         if (hasReplacement) {
-            int arrowRightX = WIDTH / 2 - 8;     // 大致居中
-            int arrowRightY = HEIGHT - 80;       // 与结构网格对齐
+            int arrowRightX = WIDTH / 2 - 8;
+            int arrowRightY = HEIGHT - 80;
             guiGraphics.drawString(Minecraft.getInstance().font, "→", arrowRightX + 4, arrowRightY + 4, 0xFFFFFF, false);
         }
     }

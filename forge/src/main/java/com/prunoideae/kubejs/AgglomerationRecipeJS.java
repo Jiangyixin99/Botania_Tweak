@@ -2,7 +2,6 @@ package com.prunoideae.kubejs;
 
 import com.google.common.collect.ImmutableList;
 import com.prunoideae.recipe.AgglomerationRecipe;
-import com.prunoideae.recipe.AgglomerationRecipes;
 import com.prunoideae.schema.TerraPlateSchema;
 import dev.latvian.mods.kubejs.item.InputItem;
 import dev.latvian.mods.kubejs.item.OutputItem;
@@ -13,54 +12,48 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.json.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class AgglomerationRecipeJS extends RecipeJS {
     private static final Logger LOGGER = LoggerFactory.getLogger("BotaniaTweaks");
 
     @Override
-    public void afterLoaded() {
-        AgglomerationRecipes.clear();
-        super.afterLoaded();
-
+    public Recipe<?> createRecipe() {
         // 1. 获取所有输出物品（多输出）
         OutputItem[] outputs = getValue(TerraPlateSchema.RESULTS);
-        ImmutableList.Builder<ItemStack> outputBuilder = ImmutableList.builder();
+        List<ItemStack> outputStacks = new ArrayList<>();
         for (OutputItem out : outputs) {
-            outputBuilder.add(out.item);
+            outputStacks.add(out.item.copy());
         }
 
         // 2. 获取输入物品（包含物品和标签）
         InputItem[] inputs = getValue(TerraPlateSchema.INGREDIENTS);
-        ImmutableList.Builder<Object> inputBuilder = ImmutableList.builder();
+        List<Object> inputList = new ArrayList<>(); // 用于 AgglomerationRecipe 构造器的输入列表（ItemStack 或 TagKey<Item>）
         for (InputItem in : inputs) {
             Ingredient ing = in.ingredient;
-            // 尝试提取单个物品（如果可能）
             ItemStack[] stacks = ing.getItems();
+            // 尝试判断是否是标签（KubeJS 的 InputItem 可能无法直接获取 TagKey，这里简化处理）
             if (stacks.length == 1 && !stacks[0].isEmpty() && ing.isSimple()) {
                 // 单个物品
-                inputBuilder.add(stacks[0].copy());
+                inputList.add(stacks[0].copy());
             } else {
-                // 标签或复杂输入：需要转换为 TagKey
-                // 由于 Ingredient 无法直接获取 TagKey，这里需要根据实际情况处理
-                // 简化处理：遍历所有物品，取第一个作为代表（不精确）
-                // 更好的做法：让 KubeJS 配方直接使用 "tag" 而非 Ingredient，但 InputItem 已封装
-                // 我们通过 Ingredient 的 toJson 等方法尝试还原 TagKey，但较复杂
-                // 这里使用一个临时方案：如果无法确定 TagKey，就假设为单个物品（可能导致匹配问题）
-                // 建议在 KubeJS 配方编写时直接使用 item 和 tag 分开字段，而不是用 InputItem
-                // 由于时间限制，这里简单处理：取第一个物品作为代表，并记录警告
+                // 可能是标签，取第一个物品作为代表（不精确，但暂时如此）
                 if (stacks.length > 0) {
                     LOGGER.warn("Tag-based input may not match correctly in recipe {}. Consider using explicit items.", this.id);
-                    inputBuilder.add(stacks[0].copy());
+                    inputList.add(stacks[0].copy());
                 } else {
-                    inputBuilder.add(ItemStack.EMPTY);
+                    inputList.add(ItemStack.EMPTY);
                 }
+                // 更精确的做法：如果需要支持标签，需要从 Ingredient 反向解析 TagKey，此处省略
             }
         }
 
@@ -75,24 +68,27 @@ public class AgglomerationRecipeJS extends RecipeJS {
         BlockState edgeReplace = parseBlockState(getValue(TerraPlateSchema.EDGE_REPLACE), null);
         BlockState cornerReplace = parseBlockState(getValue(TerraPlateSchema.CORNER_REPLACE), null);
 
-        // 5. 构建 AgglomerationRecipe
-        AgglomerationRecipe recipe = new AgglomerationRecipe(
-                inputBuilder.build(),
-                outputBuilder.build(),
+        // 使用 getOrCreateId() 获取或生成 ID
+        ResourceLocation recipeId = getOrCreateId();
+
+        // 检查 ID 是否有效（可选）
+        if (recipeId == null) {
+            throw new IllegalStateException("Failed to generate recipe ID");
+        }
+        // 5. 构建原版 AgglomerationRecipe 实例（注意参数顺序）
+        return new AgglomerationRecipe(
+                ImmutableList.copyOf(inputList),      // recipeInputs
+                ImmutableList.copyOf(outputStacks),   // recipeOutputs
                 manaCost,
                 center,
                 edge,
                 corner,
                 centerReplace,
                 edgeReplace,
-                cornerReplace
+                cornerReplace,
+                recipeId                             // 最后一个参数是 id
         );
-
-        // 6. 注册到自定义配方列表
-        AgglomerationRecipes.register(recipe);
-        LOGGER.info("Registered agglomeration recipe for {} outputs", outputs.length);
     }
-
     private BlockState parseBlockState(String blockId, BlockState defaultValue) {
         if (blockId == null || blockId.isEmpty()) return defaultValue;
         ResourceLocation id = new ResourceLocation(blockId);
@@ -100,5 +96,13 @@ public class AgglomerationRecipeJS extends RecipeJS {
         return block != null ? block.defaultBlockState() : defaultValue;
     }
 
-    // deserialize 方法无需覆盖，因为 KubeJS 会根据 schema 自动填充 valueMap
-}
+
+        // 可选：添加日志以便调试
+        // System.out.println("AgglomerationRecipeJS loaded with id: " + this.id);
+    }
+    // 可以保留 afterLoaded 但清空内容，或直接删除
+//    @Override
+//    public void afterLoaded() {
+//        // 不再手动注册到 AgglomerationRecipes
+//        super.afterLoaded();
+//    }

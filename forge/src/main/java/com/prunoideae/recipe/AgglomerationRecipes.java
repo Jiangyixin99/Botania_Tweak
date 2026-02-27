@@ -1,47 +1,54 @@
 package com.prunoideae.recipe;
 
-import com.google.common.collect.ImmutableList;
+import com.prunoideae.KubeJSBotania;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.MinecartItem;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraftforge.items.ItemHandlerHelper;
-import vazkii.botania.common.block.BotaniaBlocks;
-import vazkii.botania.common.item.BotaniaItems;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class AgglomerationRecipes {
-    public static final ArrayList<AgglomerationRecipe> RECIPES = new ArrayList<>();
-
-    public static AgglomerationRecipe defaultRecipe;
+    // 不再需要静态列表 RECIPES
 
     /**
      * 根据多方块结构查找配方（不检查物品）
      */
     public static Optional<AgglomerationRecipe> findByStructure(Level level, BlockPos platePos,
                                                                 BlockState below, BlockState side, BlockState corner) {
-        for (AgglomerationRecipe recipe : RECIPES) {
-            if (recipe.structureMatches(level, platePos, below, side, corner)) {
-                return Optional.of(recipe);
+        if (level == null) return Optional.empty();
+        RecipeManager manager = level.getRecipeManager();
+        // 改为自定义类型
+        for (var recipe : manager.getAllRecipesFor(KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE)) {
+            if (recipe instanceof AgglomerationRecipe) {
+                if (((AgglomerationRecipe) recipe).structureMatches(level, platePos, below, side, corner)) {
+                    return Optional.of((AgglomerationRecipe) recipe);
+                }
             }
         }
         return Optional.empty();
     }
+
+    /**
+     * 获取所有配方（注意：此方法只能在客户端或有世界时调用）
+     */
     public static List<AgglomerationRecipe> getAllRecipes() {
-        return RECIPES; // 假设你有一个静态列表 RECIPES
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            RecipeManager manager = mc.level.getRecipeManager();
+            return manager.getAllRecipesFor(KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE)
+                    .stream()
+                    .filter(r -> r instanceof AgglomerationRecipe)
+                    .map(r -> (AgglomerationRecipe) r)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
     }
 
-    // 在 AgglomerationRecipes 类中
-    public static void clear() {
-        RECIPES.clear(); // 假设你的静态列表名为 RECIPES
-    }
     /**
      * 检查是否存在任意配方匹配当前的多方块结构
      */
@@ -56,9 +63,14 @@ public class AgglomerationRecipes {
     public static Optional<AgglomerationRecipe> findMatchingRecipe(Level level, BlockPos platePos,
                                                                    List<ItemStack> inputs,
                                                                    BlockState below, BlockState side, BlockState corner) {
-        for (AgglomerationRecipe recipe : RECIPES) {
-            if (recipe.matches(level, platePos, inputs, below, side, corner)) {
-                return Optional.of(recipe);
+        if (level == null) return Optional.empty();
+        RecipeManager manager = level.getRecipeManager();
+        for (var recipe : manager.getAllRecipesFor(KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE)) {
+            if (recipe instanceof  AgglomerationRecipe) {
+
+                if (((AgglomerationRecipe) recipe).matches(level, platePos, inputs, below, side, corner)) {
+                    return Optional.of((AgglomerationRecipe) recipe);
+                }
             }
         }
         return Optional.empty();
@@ -67,35 +79,27 @@ public class AgglomerationRecipes {
     /**
      * 检查某个物品是否被任何配方使用
      */
-    public static boolean containsItem(ItemStack stack) {
-        for (AgglomerationRecipe recipe : RECIPES) {
-            for (ItemStack recipeStack : recipe.getRecipeStacks()) {
-                if (ItemHandlerHelper.canItemStacksStack(stack, recipeStack)) {
-                    return true;
+    public static boolean containsItem(Level level, ItemStack stack) {
+        if (level == null) return false;
+        RecipeManager manager = level.getRecipeManager();
+        for (var recipe : manager.getAllRecipesFor(KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE)) {
+            if (recipe instanceof AgglomerationRecipe) {
+
+                for (ItemStack recipeStack : ((AgglomerationRecipe) recipe).getRecipeStacks()) {
+                    if (ItemHandlerHelper.canItemStacksStack(stack, recipeStack)) {
+                        return true;
+                    }
                 }
-            }
-            for (var tag : recipe.getRecipeItemTags()) {
-                if (stack.is(tag)) {
-                    return true;
+                for (var tag : ((AgglomerationRecipe) recipe).getRecipeItemTags()) {
+                    if (stack.is(tag)) {
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
 
-    /**
-     * 初始化示例配方（应在 mod 初始化时调用）
-     */
-    public static void init() {
-
-    }
-
-
-    public static void register(AgglomerationRecipe recipe) {
-        RECIPES.add(recipe);
-    }
-
-    public static void unregister(AgglomerationRecipe recipe) {
-        RECIPES.remove(recipe);
-    }
+    // 移除原有的 register、unregister、clear 方法，因为配方现在由原版系统管理
+    // 如果仍需要用于缓存，可以保留，但不推荐
 }

@@ -1,23 +1,35 @@
 package com.prunoideae.recipe;
 
 import com.google.common.collect.ImmutableList;
+import com.prunoideae.KubeJSBotania;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import org.jetbrains.annotations.Nullable;
+import vazkii.botania.api.recipe.TerrestrialAgglomerationRecipe;
+import vazkii.botania.common.crafting.BotaniaRecipeTypes;
 
 import java.util.*;
 
-public class AgglomerationRecipe {
+public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglomerationRecipe {
     public final ImmutableList<ItemStack> recipeStacks;
     public final ImmutableList<TagKey<Item>> recipeItemTags;
     public final ImmutableList<ItemStack> recipeOutputs; // 多输出
@@ -32,16 +44,22 @@ public class AgglomerationRecipe {
     @Nullable
     public final BlockState multiblockCornerReplace;
 
+    private final ResourceLocation id;
+
     final int totalInputs;
 
     public AgglomerationRecipe(ImmutableList<Object> recipeInputs,
-                               ImmutableList<ItemStack> recipeOutputs, // 注意：这里可以是 ItemStack 或 TagKey？但通常输出都是 ItemStack，建议用 ImmutableList<ItemStack>
+                               ImmutableList<ItemStack> recipeOutputs,
                                int manaCost,
-                               BlockState multiblockCenter, BlockState multiblockEdge, BlockState multiblockCorner,
+                               BlockState multiblockCenter,
+                               BlockState multiblockEdge,
+                               BlockState multiblockCorner,
                                @Nullable BlockState multiblockCenterReplace,
                                @Nullable BlockState multiblockEdgeReplace,
-                               @Nullable BlockState multiblockCornerReplace) {
-        verifyInputs(recipeInputs);
+                               @Nullable BlockState multiblockCornerReplace,
+                               ResourceLocation id) {
+        this.id = Objects.requireNonNull(id, "Recipe ID must not be null");
+        verifyInputs(recipeInputs); // 此方法会检查空列表和非法类型
 
         // 处理输入
         ImmutableList.Builder<ItemStack> stackInputBuilder = ImmutableList.builder();
@@ -49,6 +67,9 @@ public class AgglomerationRecipe {
         for (Object o : recipeInputs) {
             if (o instanceof ItemStack) {
                 ItemStack stack = ((ItemStack) o).copy();
+                if (stack.isEmpty()) {
+                    throw new IllegalArgumentException("Empty ItemStack in recipe inputs");
+                }
                 stack.setCount(1);
                 stackInputBuilder.add(stack);
             } else if (o instanceof TagKey<?>) {
@@ -241,37 +262,31 @@ public class AgglomerationRecipe {
         if (this == obj) return true;
         if (!(obj instanceof AgglomerationRecipe other)) return false;
 
-        if (other.manaCost != manaCost) return false;
-        if (!other.multiblockCenter.is(multiblockCenter.getBlock())) return false;
-        if (!other.multiblockEdge.is(multiblockEdge.getBlock())) return false;
-        if (!other.multiblockCorner.is(multiblockCorner.getBlock())) return false;
-
-        if (!Objects.equals(other.multiblockCenterReplace, multiblockCenterReplace)) return false;
-        if (!Objects.equals(other.multiblockEdgeReplace, multiblockEdgeReplace)) return false;
-        if (!Objects.equals(other.multiblockCornerReplace, multiblockCornerReplace)) return false;
-
-        // 比较输出列表
-        if (other.recipeOutputs.size() != this.recipeOutputs.size()) return false;
-        for (int i = 0; i < this.recipeOutputs.size(); i++) {
-            if (!ItemStack.matches(this.recipeOutputs.get(i), other.recipeOutputs.get(i))) {
-                return false;
-            }
-        }
-        if (!new HashSet<>(other.recipeItemTags).equals(new HashSet<>(recipeItemTags))) return false;
-
-        List<ItemStack> myStackCopy = new ArrayList<>(recipeStacks);
-        for (ItemStack otherStack : other.recipeStacks) {
-            myStackCopy.removeIf(stack -> ItemStack.matches(stack, otherStack));
-        }
-        return myStackCopy.isEmpty();
+        return manaCost == other.manaCost &&
+                Objects.equals(multiblockCenter, other.multiblockCenter) &&
+                Objects.equals(multiblockEdge, other.multiblockEdge) &&
+                Objects.equals(multiblockCorner, other.multiblockCorner) &&
+                Objects.equals(multiblockCenterReplace, other.multiblockCenterReplace) &&
+                Objects.equals(multiblockEdgeReplace, other.multiblockEdgeReplace) &&
+                Objects.equals(multiblockCornerReplace, other.multiblockCornerReplace) &&
+                Objects.equals(recipeOutputs, other.recipeOutputs) &&
+                Objects.equals(recipeItemTags, other.recipeItemTags) &&
+                Objects.equals(recipeStacks, other.recipeStacks);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(manaCost, multiblockCenter.getBlock(), multiblockEdge.getBlock(),
-                multiblockCorner.getBlock(), recipeOutputs);
+        return Objects.hash(
+                manaCost,
+                multiblockCenter,
+                multiblockEdge,
+                multiblockCorner,
+                multiblockCenterReplace,
+                multiblockEdgeReplace,
+                multiblockCornerReplace,
+                recipeOutputs
+        );
     }
-
     @Override
     public String toString() {
         return "AgglomerationRecipe{" +
@@ -309,5 +324,67 @@ public class AgglomerationRecipe {
         }
         return true;
     }
+    @Override
+    public NonNullList<Ingredient> getIngredients() {
+        NonNullList<Ingredient> list = NonNullList.create();
+        for (ItemStack stack : recipeStacks) {
+            list.add(Ingredient.of(stack));
+        }
+        for (TagKey<Item> tag : recipeItemTags) {
+            list.add(Ingredient.of(tag));
+        }
+        if (list.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalStateException("getIngredients() returned null element");
+        }
+        return list;
+    }
 
+    @Override
+    public boolean matches(Container container, Level level) {
+        // 实际匹配由 Mixin 处理，这里可以简单返回 true
+        // 如果希望 JEI 能通过原料过滤配方，可以实现简单的物品匹配
+        List<ItemStack> inputs = new ArrayList<>();
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (!stack.isEmpty()) inputs.add(stack);
+        }
+        return itemsMatch(inputs); // 忽略结构
+    }
+
+    @Override
+    public ItemStack assemble(Container container, RegistryAccess access) {
+        return getPrimaryOutputCopy();
+    }
+
+    @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return true;
+    }
+
+    @Override
+    public ItemStack getResultItem(RegistryAccess access) {
+        return getPrimaryOutputCopy();
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        // 需要存储 id 字段，或者由 KubeJS 设置
+        return this.id; // 需要添加 id 字段
+    }
+
+    @Override
+    public RecipeSerializer<?> getSerializer() {
+        return AgglomerationRecipeSerializer.INSTANCE;
+    }
+
+    @Override
+    public RecipeType<?> getType() {
+        return KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE; // 使用 Botania 的配方类型
+    }
+
+    // Botania 接口的方法
+    @Override
+    public int getMana() {
+        return manaCost;
+    }
 }

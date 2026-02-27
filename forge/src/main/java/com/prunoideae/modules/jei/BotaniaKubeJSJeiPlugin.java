@@ -1,14 +1,22 @@
 package com.prunoideae.modules.jei;
 
+import com.prunoideae.KubeJSBotania;
+import com.prunoideae.recipe.AgglomerationRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import com.prunoideae.recipe.AgglomerationRecipes;
+import net.minecraft.world.item.crafting.RecipeManager;
 import vazkii.botania.common.block.BotaniaBlocks;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 @JeiPlugin
 public class BotaniaKubeJSJeiPlugin implements IModPlugin {
     private static final ResourceLocation UID = new ResourceLocation("botaniatweaks", "jei_plugin");
@@ -28,11 +36,16 @@ public class BotaniaKubeJSJeiPlugin implements IModPlugin {
     // 注意：参数是 IRecipeRegistration
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        // 注册配方列表
-        registration.addRecipes(
-                RecipeCategoryCustomAgglomeration.RECIPE_TYPE,
-                AgglomerationRecipes.RECIPES
-        );
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            RecipeManager recipeManager = mc.level.getRecipeManager();
+            List<AgglomerationRecipe> recipes = recipeManager.getAllRecipesFor(KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE)
+                    .stream()
+                    .filter(r -> r instanceof AgglomerationRecipe)
+                    .map(r -> (AgglomerationRecipe) r)
+                    .collect(Collectors.toList());
+            registration.addRecipes(RecipeCategoryCustomAgglomeration.RECIPE_TYPE, recipes);
+        }
     }
 
     // 单独注册催化剂
