@@ -28,39 +28,60 @@ public class AgglomerationRecipeJS extends RecipeJS {
 
     @Override
     public Recipe<?> createRecipe() {
-        // 1. 获取所有输出物品（多输出）
+        // 1. 获取所有输出物品（多输出）- 这部分不变
         OutputItem[] outputs = getValue(TerraPlateSchema.RESULTS);
         List<ItemStack> outputStacks = new ArrayList<>();
         for (OutputItem out : outputs) {
             outputStacks.add(out.item.copy());
         }
 
-        // 2. 获取输入物品（包含物品和标签）
+        // 2. 获取输入物品（包含物品和标签）- 需要修改
         InputItem[] inputs = getValue(TerraPlateSchema.INGREDIENTS);
-        List<Object> inputList = new ArrayList<>(); // 用于 AgglomerationRecipe 构造器的输入列表（ItemStack 或 TagKey<Item>）
+        List<Object> inputList = new ArrayList<>();
+
         for (InputItem in : inputs) {
+            // 从 InputItem 中获取数量
+            int count = in.count;
             Ingredient ing = in.ingredient;
-            ItemStack[] stacks = ing.getItems();
-            // 尝试判断是否是标签（KubeJS 的 InputItem 可能无法直接获取 TagKey，这里简化处理）
-            if (stacks.length == 1 && !stacks[0].isEmpty() && ing.isSimple()) {
-                // 单个物品
-                inputList.add(stacks[0].copy());
-            } else {
-                // 可能是标签，取第一个物品作为代表（不精确，但暂时如此）
+
+            // 判断是物品还是标签
+            // KubeJS 的 InputItem 可以通过 ing 的类型来判断
+            if (ing.isSimple()) {
+                // 简单物品 - 从 Ingredient 中获取物品
+                ItemStack[] stacks = ing.getItems();
                 if (stacks.length > 0) {
-                    LOGGER.warn("Tag-based input may not match correctly in recipe {}. Consider using explicit items.", this.id);
-                    inputList.add(stacks[0].copy());
-                } else {
-                    inputList.add(ItemStack.EMPTY);
+                    ItemStack stack = stacks[0].copy();
+                    stack.setCount(count);  // 设置数量！
+                    inputList.add(stack);
                 }
-                // 更精确的做法：如果需要支持标签，需要从 Ingredient 反向解析 TagKey，此处省略
+            } else {
+                // 尝试解析标签
+                // 这里需要更复杂的处理，因为 Ingredient 不能直接获取 TagKey
+                // 一个可行的方法是检查 ing 的 JSON 表示
+                var json = ing.toJson();
+                if (json.isJsonObject() && json.getAsJsonObject().has("tag")) {
+                    String tagId = json.getAsJsonObject().get("tag").getAsString();
+                    ResourceLocation tagResource = new ResourceLocation(tagId);
+                    TagKey<Item> tag = TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagResource);
+                    inputList.add(tag);
+                    // 注意：标签不能直接带数量，需要在 itemsMatch 中处理
+                } else {
+                    // 如果不是标签，退化为物品（带数量）
+                    ItemStack[] stacks = ing.getItems();
+                    if (stacks.length > 0) {
+                        ItemStack stack = stacks[0].copy();
+                        stack.setCount(count);
+                        inputList.add(stack);
+                        LOGGER.warn("Could not extract tag from ingredient in recipe {}, treating as item", this.id);
+                    }
+                }
             }
         }
 
         // 3. 获取魔力消耗
         int manaCost = getValue(TerraPlateSchema.MANA);
 
-        // 4. 获取多方块结构方块
+        // 4. 获取多方块结构方块 - 这部分不变
         BlockState center = parseBlockState(getValue(TerraPlateSchema.CENTER), null);
         BlockState edge = parseBlockState(getValue(TerraPlateSchema.EDGE), null);
         BlockState corner = parseBlockState(getValue(TerraPlateSchema.CORNER), null);
@@ -68,17 +89,14 @@ public class AgglomerationRecipeJS extends RecipeJS {
         BlockState edgeReplace = parseBlockState(getValue(TerraPlateSchema.EDGE_REPLACE), null);
         BlockState cornerReplace = parseBlockState(getValue(TerraPlateSchema.CORNER_REPLACE), null);
 
-        // 使用 getOrCreateId() 获取或生成 ID
         ResourceLocation recipeId = getOrCreateId();
-
-        // 检查 ID 是否有效（可选）
         if (recipeId == null) {
             throw new IllegalStateException("Failed to generate recipe ID");
         }
-        // 5. 构建原版 AgglomerationRecipe 实例（注意参数顺序）
+
         return new AgglomerationRecipe(
-                ImmutableList.copyOf(inputList),      // recipeInputs
-                ImmutableList.copyOf(outputStacks),   // recipeOutputs
+                ImmutableList.copyOf(inputList),
+                ImmutableList.copyOf(outputStacks),
                 manaCost,
                 center,
                 edge,
@@ -86,7 +104,7 @@ public class AgglomerationRecipeJS extends RecipeJS {
                 centerReplace,
                 edgeReplace,
                 cornerReplace,
-                recipeId                             // 最后一个参数是 id
+                recipeId
         );
     }
     private BlockState parseBlockState(String blockId, BlockState defaultValue) {

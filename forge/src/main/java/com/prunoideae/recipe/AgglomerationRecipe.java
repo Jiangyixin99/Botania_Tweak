@@ -14,18 +14,19 @@ import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import org.jetbrains.annotations.Nullable;
 import vazkii.botania.api.recipe.TerrestrialAgglomerationRecipe;
-import vazkii.botania.common.crafting.BotaniaRecipeTypes;
 
 import java.util.*;
 
@@ -59,9 +60,9 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
                                @Nullable BlockState multiblockCornerReplace,
                                ResourceLocation id) {
         this.id = Objects.requireNonNull(id, "Recipe ID must not be null");
-        verifyInputs(recipeInputs); // 此方法会检查空列表和非法类型
+        verifyInputs(recipeInputs);
 
-        // 处理输入
+        // 处理输入 - 注意：不再强制设置 count = 1，保留原始数量
         ImmutableList.Builder<ItemStack> stackInputBuilder = ImmutableList.builder();
         ImmutableList.Builder<TagKey<Item>> tagInputBuilder = ImmutableList.builder();
         for (Object o : recipeInputs) {
@@ -70,7 +71,7 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
                 if (stack.isEmpty()) {
                     throw new IllegalArgumentException("Empty ItemStack in recipe inputs");
                 }
-                stack.setCount(1);
+                // 保留原始数量，不设置 count = 1
                 stackInputBuilder.add(stack);
             } else if (o instanceof TagKey<?>) {
                 @SuppressWarnings("unchecked")
@@ -181,6 +182,7 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
         // 对于其他方块，只比较方块类型（忽略方向等属性）
         return a.getBlock() == b.getBlock();
     }
+
     // ========== 物品匹配 ==========
 
     private BlockState equalizeDirectionProperties(BlockState state) {
@@ -200,42 +202,68 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
     }
 
     public boolean itemsMatch(List<ItemStack> flattenedInputs) {
-        if (flattenedInputs.size() != totalInputs) return false;
+        // 创建输入列表的副本
+        List<ItemStack> inputs = new ArrayList<>();
+        for (ItemStack stack : flattenedInputs) {
+            inputs.add(stack.copy());
+        }
 
-        boolean[] used = new boolean[flattenedInputs.size()];
-        int matched = 0;
-
+        // 匹配具体物品（带数量）
         for (ItemStack recipeStack : recipeStacks) {
+            int requiredCount = recipeStack.getCount();
+
             boolean found = false;
-            for (int i = 0; i < flattenedInputs.size(); i++) {
-                if (used[i]) continue;
-                ItemStack input = flattenedInputs.get(i);
+            for (int i = 0; i < inputs.size(); i++) {
+                ItemStack input = inputs.get(i);
                 if (ItemStack.isSameItemSameTags(recipeStack, input)) {
-                    used[i] = true;
-                    found = true;
-                    matched++;
-                    break;
+                    int availableCount = input.getCount();
+                    if (availableCount >= requiredCount) {
+                        // 消耗所需数量
+                        input.shrink(requiredCount);
+                        if (input.isEmpty()) {
+                            inputs.remove(i);
+                        }
+                        found = true;
+                        break;
+                    } else {
+                        // 数量不足
+                        return false;
+                    }
                 }
             }
             if (!found) return false;
         }
 
+        // 匹配标签
         for (TagKey<Item> tag : recipeItemTags) {
             boolean found = false;
-            for (int i = 0; i < flattenedInputs.size(); i++) {
-                if (used[i]) continue;
-                ItemStack input = flattenedInputs.get(i);
+            for (int i = 0; i < inputs.size(); i++) {
+                ItemStack input = inputs.get(i);
                 if (input.is(tag)) {
-                    used[i] = true;
+                    input.shrink(1);
+                    if (input.isEmpty()) {
+                        inputs.remove(i);
+                    }
                     found = true;
-                    matched++;
                     break;
                 }
             }
             if (!found) return false;
         }
 
-        return matched == totalInputs;
+        // 检查是否还有多余物品（精确匹配）
+        return inputs.stream().allMatch(ItemStack::isEmpty);
+    }
+
+    private ItemStack getItemStackFromBlockState(BlockState state) {
+        Block block = state.getBlock();
+        if (block == Blocks.WATER) {
+            return new ItemStack(Items.WATER_BUCKET);
+        } else if (block == Blocks.LAVA) {
+            return new ItemStack(Items.LAVA_BUCKET);
+        } else {
+            return new ItemStack(block);
+        }
     }
 
     public boolean matches(Level level, BlockPos platePos, List<ItemStack> flattenedInputs,
@@ -287,6 +315,7 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
                 recipeOutputs
         );
     }
+
     @Override
     public String toString() {
         return "AgglomerationRecipe{" +
@@ -324,19 +353,56 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
         }
         return true;
     }
+
     @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> list = NonNullList.create();
+
+        // 添加物品输入
         for (ItemStack stack : recipeStacks) {
             list.add(Ingredient.of(stack));
         }
         for (TagKey<Item> tag : recipeItemTags) {
             list.add(Ingredient.of(tag));
         }
+
+        // 添加结构方块作为输入材料
+        addStructureBlocksToIngredients(list);
+
         if (list.stream().anyMatch(Objects::isNull)) {
             throw new IllegalStateException("getIngredients() returned null element");
         }
         return list;
+    }
+
+    /**
+     * 将结构方块添加到输入材料列表中
+     * 这样JEI就能识别这些方块作为配方的输入材料
+     */
+    private void addStructureBlocksToIngredients(NonNullList<Ingredient> list) {
+        // 中心方块
+        if (multiblockCenter != null) {
+            ItemStack centerStack = getItemStackFromBlockState(multiblockCenter);
+            if (!centerStack.isEmpty()) {
+                list.add(Ingredient.of(centerStack));
+            }
+        }
+
+        // 边缘方块
+        if (multiblockEdge != null) {
+            ItemStack edgeStack = getItemStackFromBlockState(multiblockEdge);
+            if (!edgeStack.isEmpty()) {
+                list.add(Ingredient.of(edgeStack));
+            }
+        }
+
+        // 角落方块
+        if (multiblockCorner != null) {
+            ItemStack cornerStack = getItemStackFromBlockState(multiblockCorner);
+            if (!cornerStack.isEmpty()) {
+                list.add(Ingredient.of(cornerStack));
+            }
+        }
     }
 
     @Override
@@ -368,8 +434,7 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
 
     @Override
     public ResourceLocation getId() {
-        // 需要存储 id 字段，或者由 KubeJS 设置
-        return this.id; // 需要添加 id 字段
+        return this.id;
     }
 
     @Override
@@ -379,7 +444,7 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
 
     @Override
     public RecipeType<?> getType() {
-        return KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE; // 使用 Botania 的配方类型
+        return KubeJSBotania.CUSTOM_TERRA_PLATE_TYPE;
     }
 
     // Botania 接口的方法

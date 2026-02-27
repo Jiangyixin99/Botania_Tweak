@@ -17,7 +17,10 @@ import vazkii.botania.common.block.block_entity.CraftyCrateBlockEntity;
 @Mixin(CraftyCrateBlockEntity.class)
 public abstract class MixinCraftyCrateBlockEntity implements ManaReceiver {
 
-    protected abstract Container getItemHandler();
+    protected Container getInventory() {
+        // Shadow方法占位符
+        throw new AssertionError();
+    }
 
     @Shadow(remap = false)
     private boolean isLocked(int slot) {
@@ -34,15 +37,19 @@ public abstract class MixinCraftyCrateBlockEntity implements ManaReceiver {
     private void onCraft(boolean fullCheck, CallbackInfoReturnable<Boolean> cir) {
         // 计算机巧箱内非空且未锁定的物品数量
         int itemCount = 0;
-        var handler = getItemHandler();
+        var handler = getInventory();
         for (int i = 0; i < handler.getContainerSize(); i++) {
             if (!handler.getItem(i).isEmpty() && !isLocked(i)) {
                 itemCount++;
             }
         }
 
-        // 计算所需魔力（最大 2000，按比例）
-        int requiredMana = (int) (MAX_MANA * (itemCount / 9.0f));
+        // 计算所需魔力（最大 2000，按物品数量比例消耗）
+        // 例如：9个物品消耗2000x90%=1800魔力，1个物品消耗2000x10%=200魔力
+        float percentage = itemCount / 9.0f;
+        // 确保至少消耗10%的魔力（即使只有1个物品）
+        percentage = Math.max(percentage, 0.1f);
+        int requiredMana = (int) (MAX_MANA * percentage);
 
         if (currentMana < requiredMana) {
             cir.setReturnValue(false); // 魔力不足，取消合成

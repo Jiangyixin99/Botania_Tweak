@@ -127,45 +127,46 @@ public class RecipeCategoryCustomAgglomeration implements IRecipeCategory<Agglom
      */
     private void drawStructureGrid(IRecipeLayoutBuilder builder, AgglomerationRecipe recipe,
                                    int gridX, int gridY, boolean useReplacement) {
+        // 根据是否替换决定槽位角色：替换后为 OUTPUT，否则为 INPUT
+        RecipeIngredientRole role = useReplacement ? RecipeIngredientRole.OUTPUT : RecipeIngredientRole.INPUT;
         int cellSize = ITEM_SIZE + SLOT_SPACING;
 
         // 中心方块
         BlockState center = useReplacement ? recipe.multiblockCenterReplace : recipe.multiblockCenter;
         if (center != null) {
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + cellSize, gridY + cellSize)
+            builder.addSlot(role, gridX + cellSize, gridY + cellSize)
                     .addItemStack(getDisplayStack(center))
                     .setSlotName(useReplacement ? "replace_center" : "center");
         }
 
-        // 边缘方块（上下左右）
+        // 边缘方块
         BlockState edge = useReplacement ? recipe.multiblockEdgeReplace : recipe.multiblockEdge;
         if (edge != null) {
             ItemStack edgeStack = getDisplayStack(edge);
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + cellSize, gridY)
+            builder.addSlot(role, gridX + cellSize, gridY)
                     .addItemStack(edgeStack).setSlotName(useReplacement ? "replace_edge_top" : "edge_top");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + cellSize, gridY + 2 * cellSize)
+            builder.addSlot(role, gridX + cellSize, gridY + 2 * cellSize)
                     .addItemStack(edgeStack).setSlotName(useReplacement ? "replace_edge_bottom" : "edge_bottom");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX, gridY + cellSize)
+            builder.addSlot(role, gridX, gridY + cellSize)
                     .addItemStack(edgeStack).setSlotName(useReplacement ? "replace_edge_left" : "edge_left");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + 2 * cellSize, gridY + cellSize)
+            builder.addSlot(role, gridX + 2 * cellSize, gridY + cellSize)
                     .addItemStack(edgeStack).setSlotName(useReplacement ? "replace_edge_right" : "edge_right");
         }
 
-        // 角落方块（四角）
+        // 角落方块
         BlockState corner = useReplacement ? recipe.multiblockCornerReplace : recipe.multiblockCorner;
         if (corner != null) {
             ItemStack cornerStack = getDisplayStack(corner);
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX, gridY)
+            builder.addSlot(role, gridX, gridY)
                     .addItemStack(cornerStack).setSlotName(useReplacement ? "replace_corner_tl" : "corner_tl");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + 2 * cellSize, gridY)
+            builder.addSlot(role, gridX + 2 * cellSize, gridY)
                     .addItemStack(cornerStack).setSlotName(useReplacement ? "replace_corner_tr" : "corner_tr");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX, gridY + 2 * cellSize)
+            builder.addSlot(role, gridX, gridY + 2 * cellSize)
                     .addItemStack(cornerStack).setSlotName(useReplacement ? "replace_corner_bl" : "corner_bl");
-            builder.addSlot(RecipeIngredientRole.RENDER_ONLY, gridX + 2 * cellSize, gridY + 2 * cellSize)
+            builder.addSlot(role, gridX + 2 * cellSize, gridY + 2 * cellSize)
                     .addItemStack(cornerStack).setSlotName(useReplacement ? "replace_corner_br" : "corner_br");
         }
     }
-
     /**
      * 辅助方法：将方块状态转换为适合 JEI 显示的物品（水/熔岩 → 桶，其他方块 → 对应物品）
      */
@@ -192,20 +193,32 @@ public class RecipeCategoryCustomAgglomeration implements IRecipeCategory<Agglom
         int manaBarX = (WIDTH - manaBarWidth) / 2;   // 水平居中
         int manaBarY = HEIGHT - 30;       // 魔力条 Y 坐标（底部留空）
 
-        // 绘制魔力条（自动处理零头进度）
-        HUDHandler.renderManaBar(guiGraphics, manaBarX, manaBarY, 0x4444FF, 1.0F, manaCost, 1_000_000);
-
-        // 计算需要的整池数
-        int poolsNeeded = (int) Math.ceil((double) manaCost / 1_000_000.0);
-        if (poolsNeeded > 1) {
-            String poolText = "x" + poolsNeeded;
+        // 计算倍数和余数
+        int manaPerBar = 1_000_000; // 魔力条最大值
+        int multiples = manaCost / manaPerBar; // 整除部分
+        int remainder = manaCost % manaPerBar; // 余数部分
+        
+        // 根据不同情况显示魔力条
+        if (manaCost < 1_000_000) {
+            // 魔力值小于1,000,000，直接显示原版魔力条
+            HUDHandler.renderManaBar(guiGraphics, manaBarX, manaBarY, 0x4444FF, 1.0F, manaCost, manaPerBar);
+        } else {
+            // 魔力值大于等于1,000,000
+            // 显示倍数
+            String multipleText = "x" + multiples;
             int fontHeight = Minecraft.getInstance().font.lineHeight;
-            // 计算倍数文字的 Y 坐标：使其与魔力条垂直居中
-            int textY = manaBarY + (manaBarHeight - fontHeight) / 2;
-            // 倍数文字显示在魔力条右侧，间距 5 像素
-            guiGraphics.drawString(Minecraft.getInstance().font, poolText,
-                    manaBarX + manaBarWidth + 5, textY, 0xAAAAAA, false);
+            int textY = (int) (manaBarY - 0.5F);
+            guiGraphics.drawString(Minecraft.getInstance().font, multipleText,
+                    manaBarX - 20, textY, 0xAAAAAA, false); // 显示在魔力条左侧
+            
+            // 显示余数部分的魔力条
+            if (remainder > 0) {
+                HUDHandler.renderManaBar(guiGraphics, manaBarX, manaBarY, 0x4444FF, 1.0F, remainder, manaPerBar);
+            } else {
+                HUDHandler.renderManaBar(guiGraphics, manaBarX, manaBarY, 0x4444FF, 1.0F, 0, manaPerBar);
+            }
         }
+
 
         // ========== 其他绘制（箭头）保持不变 ==========
         // 向下箭头
