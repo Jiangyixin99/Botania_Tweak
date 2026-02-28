@@ -1,126 +1,150 @@
-plugins {
-    id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.6-SNAPSHOT" apply false
-
-}
-
-architectury {
-    minecraft = rootProject.minecraft_version
-}
-
-subprojects {
-    apply plugin: "dev.architectury.loom"
-    apply plugin: 'architectury-plugin'
-
-    loom {
-        silentMojangMappingsLicense()
-    }
-
-    dependencies {
-        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-        // The following line declares the mojmap mappings, you may use other mappings as well
-        mappings loom.layered() {
-            officialMojangMappings()
-        }
-
-        // The following line declares the yarn mappings you may select this one as well.
-        // mappings "net.fabricmc:yarn:1.18.2+build.3:v2"
-    }
-}
-
-allprojects {
-    apply plugin: "java"
-    apply plugin: "architectury-plugin"
-    apply plugin: "maven-publish"
-
-    archivesBaseName = rootProject.archives_base_name
-    version = rootProject.mod_version
-    group = rootProject.maven_group
-
+buildscript {
     repositories {
-        maven {
-            url "https://maven.neoforged.net/releases"
-        }
-        maven {
-            url "https://maven.architectury.dev/"
-            content {
-                includeGroup "me.shedaniel"
-            }
-        }
-        maven {
-            url "https://maven.saps.dev/minecraft"
-            content {
-                includeGroup "dev.latvian.mods"
-                includeGroup "dev.ftb.mods"
-            }
-        }
-        maven {
-            name = "Modmuss"
-            url = "https://maven.modmuss50.me/"
-        }
-        maven {
-            name = "Jared"
-            url = "https://maven.blamejared.com/"
-        }
-        maven {
-            url = "https://maven.terraformersmc.com/" // for trinkets
-        }
-        maven {
-            name = "Ladysnake Libs"
-            url = 'https://maven.ladysnake.org/releases'
-        }
-        maven {
-            name = "BuildCraft" // for LBA
-            url = "https://mod-buildcraft.com/maven"
-        }
-        maven {
-            name "entity reach"
-            url "https://maven.jamieswhiteshirt.com/libs-release/"
-        }
-        maven {
-            url "https://jitpack.io" // for step height eam
-        }
-        maven {
-            url "https://maven.shedaniel.me/" // for rei
-        }
-        maven {
-            url "https://server.bbkr.space/artifactory/libs-release/" // for bannerplusplus
-        }
-        maven {
-            name = "ParchmentMC"
-            url = "https://maven.parchmentmc.net/"
-        }
-        maven {
-            name = "Modrinth"
-            url = "https://api.modrinth.com/maven"
-            content {
-                includeGroup "maven.modrinth"
-            }
-        }
-            // Add repositories to publish to here.
-            maven {
-                url "https://maven.latvian.dev/releases"
-                content {
-                    includeGroup "dev.latvian.mods"
-                    includeGroup "dev.latvian.apps"
+        mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net/' } // ForgeGradle 所在
+        maven { url = 'https://plugins.gradle.org/m2/' } // 添加插件门户仓库
+        maven { url = 'https://repo.spongepowered.org/maven/' }
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0+', changing: true
+        classpath 'org.spongepowered:mixingradle:0.7.+'   // 用于 Mixin 注解处理
+        classpath "gradle.plugin.com.github.johnrengelman:shadow:${shadow_plugin_version}"
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'org.spongepowered.mixin'   // 如果使用 Mixin，必须应用
+
+archivesBaseName = archives_base_name
+version = mod_version
+group = maven_group
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    // 如果你之前使用 Parchment，可以在此配置，但需要添加相应仓库
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                kubejs_botania {
+                    source sourceSets.main
                 }
             }
-
-            maven {
-                url "https://jitpack.io"
-                content {
-                    includeGroup "com.github.rtyley"
+        }
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                kubejs_botania {
+                    source sourceSets.main
                 }
             }
-
+        }
     }
+}
 
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
-        options.release = 17
-    }
+// Mixin 配置
+mixin {
+    add sourceSets.main, "kubejs_botania-forge-refmap.json"
+    config "kubejs_botania.mixins.forge.json"
+}
 
-    java {
-        withSourcesJar()
+repositories {
+    maven { url = 'https://maven.minecraftforge.net/' }
+    maven { url "https://maven.architectury.dev/" }         // Architectury API 库（保留）
+    maven { url "https://maven.saps.dev/minecraft" }        // KubeJS, Rhino
+    maven { url "https://maven.latvian.dev/releases" }      // KubeJS 备用
+    maven { name = "BlameJared"; url "https://maven.blamejared.com/" } // Botania, Patchouli
+    maven { name = "JEI"; url "https://dvs1.progwml6.com/files/maven/" }
+    // 其他你需要的仓库（如 Trinkets、Modrinth 等）按需保留
+}
+
+configurations {
+    shadow
+    compileClasspath.extendsFrom shadow
+    runtimeClasspath.extendsFrom shadow
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Architectury API 库（必须保留，因为代码中使用了它）
+    implementation fg.deobf("dev.architectury:architectury-forge:${architectury_version}")
+
+    // KubeJS 相关
+    implementation fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")
+    implementation fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}")
+
+    // Botania
+    implementation fg.deobf("vazkii.botania:Botania:${minecraft_version}-${botania_version}-FORGE")
+
+    // JEI
+    implementation ("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    runtimeOnly ("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+
+    // Patchouli
+    compileOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}:api")
+    runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}")
+
+    // Mixin 注解处理器（必须在 annotationProcessor 中）
+    annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+
+    // 如果你需要打包某些依赖到最终 JAR 中，使用 shadow 配置
+    // 例如：shadow fg.deobf("some:library:version")
+}
+
+// 处理资源文件
+processResources {
+    inputs.property "version", project.version
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
     }
+}
+
+// 配置 ShadowJar
+shadowJar {
+    archiveClassifier.set('dev')
+    configurations = [project.configurations.shadow]
+    // 如果你不需要打包某些依赖，可以在这里 exclude
+    // 例如：exclude "architectury-common.json"
+}
+
+// 重新映射 ShadowJar
+reobf {
+    shadowJar {}
+}
+
+// 最终输出的 JAR 文件
+artifacts {
+    archives shadowJar
+}
+
+java {
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact shadowJar
+            artifact sourcesJar
+        }
+    }
+    repositories {
+        // 配置你的发布仓库
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.release = 17
 }

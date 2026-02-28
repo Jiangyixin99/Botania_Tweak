@@ -61,7 +61,7 @@ public class AgglomerationRecipeJS extends RecipeJS {
                 var json = ing.toJson();
                 if (json.isJsonObject() && json.getAsJsonObject().has("tag")) {
                     String tagId = json.getAsJsonObject().get("tag").getAsString();
-                    ResourceLocation tagResource = new ResourceLocation(tagId);
+                    ResourceLocation tagResource = ResourceLocation.parse(tagId);
                     TagKey<Item> tag = TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagResource);
                     inputList.add(tag);
                     // 注意：标签不能直接带数量，需要在 itemsMatch 中处理
@@ -109,7 +109,7 @@ public class AgglomerationRecipeJS extends RecipeJS {
     }
     private BlockState parseBlockState(String blockId, BlockState defaultValue) {
         if (blockId == null || blockId.isEmpty()) return defaultValue;
-        ResourceLocation id = new ResourceLocation(blockId);
+        ResourceLocation id =  ResourceLocation.parse(blockId);
         Block block = BuiltInRegistries.BLOCK.get(id);
         return block != null ? block.defaultBlockState() : defaultValue;
     }

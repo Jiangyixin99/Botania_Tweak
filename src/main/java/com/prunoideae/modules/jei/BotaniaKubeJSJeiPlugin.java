@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
 
 @JeiPlugin
 public class BotaniaKubeJSJeiPlugin implements IModPlugin {
-    private static final ResourceLocation UID = new ResourceLocation("botaniatweaks", "jei_plugin");
-
+    private static final ResourceLocation UID = ResourceLocation.parse("botaniatweaks:jei_plugin");
     @Override
     public ResourceLocation getPluginUid() {
         return UID;
