@@ -35,7 +35,7 @@ public class AgglomerationRecipeSerializer implements RecipeSerializer<Agglomera
                 ItemStack stack = net.minecraftforge.common.crafting.CraftingHelper.getItemStack(obj, true);
                 inputs.add(stack);
             } else if (obj.has("tag")) {
-                ResourceLocation tagId = new ResourceLocation(GsonHelper.getAsString(obj, "tag"));
+                ResourceLocation tagId = ResourceLocation.tryParse(GsonHelper.getAsString(obj, "tag"));
                 TagKey<Item> tag = TagKey.create(Registries.ITEM, tagId);
                 inputs.add(tag);
             }

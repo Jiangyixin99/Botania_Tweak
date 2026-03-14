@@ -13,7 +13,7 @@ public class KubeJSBotania {
     }
     // 自定义聚合配方的 RecipeType
     public static final ResourceLocation CUSTOM_TERRA_PLATE_ID =
-            new ResourceLocation(MOD_ID, "custom_terra_plate");
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "custom_terra_plate");
     public static final RecipeType<AgglomerationRecipe> CUSTOM_TERRA_PLATE_TYPE =
             RecipeType.simple(CUSTOM_TERRA_PLATE_ID);
 }

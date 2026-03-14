@@ -17,9 +17,24 @@ import vazkii.botania.common.block.block_entity.CraftyCrateBlockEntity;
 @Mixin(CraftyCrateBlockEntity.class)
 public abstract class MixinCraftyCrateBlockEntity implements ManaReceiver {
 
-    protected Container getInventory() {
-        // Shadow方法占位符
-        throw new AssertionError();
+    public Container getInventory() {
+        try {
+            // 通过反射获取 inventory 字段
+            java.lang.reflect.Field inventoryField = CraftyCrateBlockEntity.class.getDeclaredField("inventory");
+            inventoryField.setAccessible(true);
+            return (Container) inventoryField.get(this);
+        } catch (Exception e) {
+            // 如果反射失败，尝试其他方式
+            try {
+                // 尝试调用 getInventory 方法
+                java.lang.reflect.Method getInventoryMethod = CraftyCrateBlockEntity.class.getDeclaredMethod("getInventory");
+                getInventoryMethod.setAccessible(true);
+                return (Container) getInventoryMethod.invoke(this);
+            } catch (Exception ex) {
+                // 如果都失败了，返回空容器
+                return new net.minecraft.world.SimpleContainer(0);
+            }
+        }
     }
 
     @Shadow(remap = false)

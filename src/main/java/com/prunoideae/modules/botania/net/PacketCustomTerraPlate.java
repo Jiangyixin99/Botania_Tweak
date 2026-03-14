@@ -16,7 +16,7 @@ import org.joml.Vector3f;
 import java.util.function.Supplier;
 
 public record PacketCustomTerraPlate(BlockPos pos, int color1, int color2, float progress) {
-    public static final ResourceLocation ID = new ResourceLocation("botaniatweaks", "terra_plate_particle");
+    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("kubejs_botania", "terra_plate_particle");
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ID,

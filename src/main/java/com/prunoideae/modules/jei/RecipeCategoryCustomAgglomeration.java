@@ -30,7 +30,7 @@ import java.util.List;
 public class RecipeCategoryCustomAgglomeration implements IRecipeCategory<AgglomerationRecipe> {
 
     public static final RecipeType<AgglomerationRecipe> RECIPE_TYPE =
-            RecipeType.create("botaniatweaks", "agglomeration", AgglomerationRecipe.class);
+            RecipeType.create("kubejs_botania", "agglomeration", AgglomerationRecipe.class);
 
     private static final int WIDTH = 200;
     private static final int HEIGHT = 180;

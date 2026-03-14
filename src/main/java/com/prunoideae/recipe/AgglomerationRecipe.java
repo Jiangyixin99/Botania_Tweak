@@ -211,27 +211,32 @@ public class AgglomerationRecipe implements Recipe<Container>, TerrestrialAgglom
         // 匹配具体物品（带数量）
         for (ItemStack recipeStack : recipeStacks) {
             int requiredCount = recipeStack.getCount();
+            int remainingCount = requiredCount;
 
-            boolean found = false;
-            for (int i = 0; i < inputs.size(); i++) {
+            // 遍历所有输入物品，收集相同物品的数量
+            for (int i = 0; i < inputs.size() && remainingCount > 0; ) {
                 ItemStack input = inputs.get(i);
                 if (ItemStack.isSameItemSameTags(recipeStack, input)) {
                     int availableCount = input.getCount();
-                    if (availableCount >= requiredCount) {
-                        // 消耗所需数量
-                        input.shrink(requiredCount);
-                        if (input.isEmpty()) {
-                            inputs.remove(i);
-                        }
-                        found = true;
-                        break;
+                    if (availableCount <= remainingCount) {
+                        // 消耗全部数量
+                        remainingCount -= availableCount;
+                        inputs.remove(i);
                     } else {
-                        // 数量不足
-                        return false;
+                        // 消耗部分数量
+                        input.shrink(remainingCount);
+                        remainingCount = 0;
+                        i++;
                     }
+                } else {
+                    i++;
                 }
             }
-            if (!found) return false;
+
+            // 检查是否满足所需数量
+            if (remainingCount > 0) {
+                return false;
+            }
         }
 
         // 匹配标签

@@ -102,7 +102,7 @@ public class MixinTileTerrestrialAgglomerationPlate {
         for (AgglomerationRecipe recipe : botaniatweaks$candidateRecipes) {
             if (recipe.itemsMatch(inputs)) {
                 botaniatweaks$currentMatchedRecipe = recipe; // 缓存当前匹配的配方
-                ResourceLocation fakeId = new ResourceLocation("botaniatweaks", "custom_" + System.identityHashCode(recipe));
+                ResourceLocation fakeId = ResourceLocation.fromNamespaceAndPath("kubejs_botania", "custom_" + System.identityHashCode(recipe));
                 cir.setReturnValue(new CustomTerrestrialAgglomerationRecipe(recipe, fakeId));
                 return;
             }

@@ -56,18 +56,18 @@ public interface BotaniaSchema {
             } else if (from instanceof JsonObject object) {
                 var type = object.get("type").getAsString();
                 if (type.equals("block")) {
-                    return Either.left(RegistryInfo.BLOCK.getValue(new ResourceLocation(object.get("block").getAsString())));
+                    return Either.left(RegistryInfo.BLOCK.getValue(ResourceLocation.tryParse(object.get("block").getAsString())));
                 } else if (type.equals("tag")) {
-                    return Either.right(TagKey.create(Registries.BLOCK, new ResourceLocation(object.get("tag").getAsString())));
+                    return Either.right(TagKey.create(Registries.BLOCK, ResourceLocation.tryParse(object.get("tag").getAsString())));
                 } else {
                     return null;
                 }
             } else {
                 var name = from.toString();
                 if (name.startsWith("#")) {
-                    return Either.right(TagKey.create(Registries.BLOCK, new ResourceLocation(name.substring(1))));
+                    return Either.right(TagKey.create(Registries.BLOCK, ResourceLocation.tryParse(name.substring(1))));
                 } else {
-                    return Either.left(RegistryInfo.BLOCK.getValue(new ResourceLocation(name)));
+                    return Either.left(RegistryInfo.BLOCK.getValue(ResourceLocation.tryParse(name)));
                 }
             }
         }
@@ -133,9 +133,9 @@ public interface BotaniaSchema {
             if (from instanceof Brew brew) {
                 return brew;
             } else if (from instanceof JsonPrimitive primitive) {
-                return BotaniaAPI.instance().getBrewRegistry().get(new ResourceLocation(primitive.getAsString()));
+                return BotaniaAPI.instance().getBrewRegistry().get(ResourceLocation.tryParse(primitive.getAsString()));
             } else {
-                return BotaniaAPI.instance().getBrewRegistry().get(new ResourceLocation(from.toString()));
+                return BotaniaAPI.instance().getBrewRegistry().get(ResourceLocation.tryParse(from.toString()));
             }
         }
     };
