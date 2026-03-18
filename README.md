@@ -4,8 +4,8 @@
 通过原KubeJS-Botania模组改编
 https://github.com/Prunoideae/KubeJS-Botania/tree/1.20.1?tab=readme-ov-file
 支持泰拉凝聚板多方块合成
-![img.png](img.png)
-![img_1.png](img_1.png)
+![img.webp](img.webp)
+![img_1.webp](img_1.webp)
 
 kubejs示例
 
