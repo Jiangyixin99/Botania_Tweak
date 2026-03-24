@@ -1,6 +1,5 @@
 package com.prunoideae.mixin;
 
-import com.prunoideae.recipe.AgglomerationRecipe;
 import com.prunoideae.recipe.AgglomerationRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;

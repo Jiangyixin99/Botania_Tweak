@@ -10,7 +10,6 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import com.prunoideae.recipe.AgglomerationRecipes;
 import net.minecraft.world.item.crafting.RecipeManager;
 import vazkii.botania.common.block.BotaniaBlocks;
 

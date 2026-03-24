@@ -7,7 +7,6 @@ import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.recipe.schema.RegisterRecipeSchemasEvent;
 import dev.latvian.mods.kubejs.registry.RegistryInfo;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
-import net.minecraft.resources.ResourceLocation;
 import vazkii.botania.api.BotaniaRegistries;
 import vazkii.botania.api.brew.Brew;
 import vazkii.botania.api.corporea.CorporeaHelper;

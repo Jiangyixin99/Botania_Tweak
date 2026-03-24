@@ -26,7 +26,6 @@ import vazkii.botania.common.block.block_entity.TerrestrialAgglomerationPlateBlo
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Mixin(TerrestrialAgglomerationPlateBlockEntity.class)
 public class MixinTileTerrestrialAgglomerationPlate {

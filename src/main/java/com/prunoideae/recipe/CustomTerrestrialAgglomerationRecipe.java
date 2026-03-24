@@ -13,7 +13,6 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import vazkii.botania.api.recipe.TerrestrialAgglomerationRecipe;
 import vazkii.botania.common.block.BotaniaBlocks;
-import vazkii.botania.common.crafting.BotaniaRecipeTypes;
 
 import java.util.ArrayList;
 import java.util.List;
