@@ -1,4 +1,4 @@
-package com.prunoideae.modules.jei;
+package com.prunoideae.jei;
 
 import com.prunoideae.recipe.AgglomerationRecipe;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;

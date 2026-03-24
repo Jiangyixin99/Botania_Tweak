@@ -1,4 +1,4 @@
-package com.prunoideae.modules.jei;
+package com.prunoideae.jei;
 
 import com.prunoideae.KubeJSBotania;
 import com.prunoideae.recipe.AgglomerationRecipe;
